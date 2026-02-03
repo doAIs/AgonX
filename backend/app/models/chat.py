@@ -31,7 +31,7 @@ class ChatMessage(Base):
     content = Column(Text, nullable=False)
     images = Column(JSON, nullable=True)  # 图片URL列表
     agent_name = Column(String(50), nullable=True)  # 智能体名称
-    metadata = Column(JSON, nullable=True)  # 额外元数据
+    meta_data = Column(JSON, nullable=True)  # 额外元数据
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 关系

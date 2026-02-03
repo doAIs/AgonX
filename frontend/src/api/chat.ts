@@ -4,7 +4,6 @@ import type { Message, ChatSession, ApiResponse, PaginatedResponse } from '@/typ
 export const chatApi = {
   // 发送消息 (SSE流式响应)
   sendMessage(sessionId: string, content: string): EventSource {
-    const token = localStorage.getItem('token')
     const url = `/api/v1/chat/message?session_id=${sessionId}&content=${encodeURIComponent(content)}`
     const eventSource = new EventSource(url)
     return eventSource

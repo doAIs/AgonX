@@ -2,7 +2,7 @@
   <div class="login-container">
     <!-- 粒子背景 -->
     <div class="particles-bg">
-      <div v-for="i in 50" :key="i" class="particle" :style="getParticleStyle(i)"></div>
+      <div v-for="i in 50" :key="i" class="particle" :style="getParticleStyle()"></div>
     </div>
     
     <!-- 登录卡片 -->
@@ -163,7 +163,7 @@ const registerRules: FormRules = {
   ]
 }
 
-function getParticleStyle(index: number) {
+function getParticleStyle() {
   const size = Math.random() * 4 + 2
   return {
     width: `${size}px`,
