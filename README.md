@@ -82,7 +82,9 @@ docker-compose up -d
 
 ### 3. 本地开发调试
 - **前端**: `cd frontend && npm install && npm run dev` (访问 http://localhost:3000)
-- **后端**: `cd backend && pip install -r requirements.txt && uvicorn main:app --reload` (访问 http://localhost:8000/docs)
+- **后端**: `cd backend && pip install -r requirements.txt && python main.py` (访问 http://localhost:8080/docs)
+
+**注意**：本地开发环境后端使用 **8080 端口**，Docker 容器环境使用 **8000 端口**，避免端口冲突。
 
 ---
 

@@ -17,7 +17,8 @@ aioredis==2.0.1
 
 # Authentication
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+passlib==1.7.4
+bcrypt==3.2.2  # 固定版本，4.x与passlib不兼容
 pydantic[email]==2.9.2
 pydantic-settings==2.5.2
 
