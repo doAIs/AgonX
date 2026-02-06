@@ -1,10 +1,11 @@
 """
 AgonX 多智能体编排器
-基于 LangGraph 实现三智能体协作
+基于 LangGraph 实现三智能体协作 + MCP工具调用
 """
 from typing import TypedDict, List, Optional, Any
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from app.mcp.client import MCPClient
 
 
 class AgentState(TypedDict):
@@ -18,16 +19,34 @@ class AgentState(TypedDict):
     final_answer: str            # 最终答案
     current_agent: str           # 当前智能体
     error: Optional[str]         # 错误信息
+    tool_calls: List[Any]        # 工具调用记录
+    tool_results: List[Any]      # 工具执行结果
 
 
 async def researcher_node(state: AgentState) -> AgentState:
     """
     研究员智能体
-    负责: 知识库检索、图片查找
+    负责: 知识库检索、图片查找、MCP工具调用
     """
     state["current_agent"] = "researcher"
     
     query = state["query"]
+    
+    # 初始化MCP客户端
+    mcp_client = MCPClient()
+    
+    # 检测是否需要调用工具（简单关键词匹配）
+    tool_results = []
+    if "天气" in query or "温度" in query:
+        # 调用天气工具
+        city = "北京"  # 实际应从查询中提取城市名
+        result = await mcp_client.call_tool("get_weather", {"city": city})
+        tool_results.append(result)
+    
+    if "订单" in query:
+        # 调用订单查询工具
+        result = await mcp_client.call_tool("query_order", {"limit": 5})
+        tool_results.append(result)
     
     # TODO: 实际项目中调用知识库检索服务
     # from app.knowledge.retrieval import RetrievalService
@@ -40,11 +59,17 @@ async def researcher_node(state: AgentState) -> AgentState:
         f"检索结果2: 补充说明..."
     ]
     
+    # 如果有工具结果，添加到上下文中
+    for tool_result in tool_results:
+        if tool_result["success"]:
+            context.append(mcp_client.format_tool_result(tool_result))
+    
     images = []  # 检索到的图片URL列表
     
     state["context"] = context
     state["images"] = images
-    state["research_result"] = f"已从知识库中检索到 {len(context)} 条相关信息"
+    state["tool_results"] = tool_results
+    state["research_result"] = f"已从知识库中检索到 {len(context)} 条相关信息，调用了 {len(tool_results)} 个工具"
     
     return state
 

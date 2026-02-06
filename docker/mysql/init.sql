@@ -1,8 +1,19 @@
 -- AgonX MySQL 初始化脚本
+-- 数据库配置：
+-- 数据库名: agonx
+-- 用户名: agonx
+-- 密码: agonx_password
+-- Root密码: root_password
+
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
--- 确保使用正确的数据库
+-- 创建数据库（如果不存在）
+CREATE DATABASE IF NOT EXISTS agonx 
+  CHARACTER SET utf8mb4 
+  COLLATE utf8mb4_unicode_ci;
+
+-- 使用数据库
 USE agonx;
 
 -- 创建用户表

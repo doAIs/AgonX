@@ -12,6 +12,15 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时
     await init_db()
+    
+    # 注册MCP工具
+    from app.mcp.server import mcp_server
+    from app.mcp.tools import WeatherTool, OrderQueryTool, OrderStatisticsTool
+    
+    mcp_server.register_tool(WeatherTool())
+    mcp_server.register_tool(OrderQueryTool())
+    mcp_server.register_tool(OrderStatisticsTool())
+    
     yield
     # 关闭时
     await close_db()
@@ -39,6 +48,10 @@ def create_app() -> FastAPI:
     
     # 注册路由
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+    
+    # 注册MCP路由
+    from app.mcp.server import mcp_server
+    app.include_router(mcp_server.get_router())
     
     # 健康检查
     @app.get("/health")

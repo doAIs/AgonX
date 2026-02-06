@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.core.security import create_access_token, get_current_active_user
 from app.services.user_service import UserService
-from app.schemas import UserCreate, UserResponse, Token, ApiResponse
+from app.schemas import UserCreate, UserLogin, UserResponse, Token, ApiResponse
 from app.models import User
 
 router = APIRouter(prefix="/auth", tags=["认证"])
@@ -13,12 +12,12 @@ router = APIRouter(prefix="/auth", tags=["认证"])
 
 @router.post("/login", response_model=ApiResponse[Token])
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    login_data: UserLogin,
     db: AsyncSession = Depends(get_db)
 ):
     """用户登录"""
     user_service = UserService(db)
-    user = await user_service.authenticate(form_data.username, form_data.password)
+    user = await user_service.authenticate(login_data.username, login_data.password)
     
     if not user:
         raise HTTPException(
