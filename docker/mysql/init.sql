@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS model_configs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入默认管理员用户 (密码: admin123)
+-- 注意：这是bcrypt加密后的哈希值
 INSERT INTO users (username, email, hashed_password, is_superuser) 
-VALUES ('admin', 'admin@agonx.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.S/GW7.7dwZfQTi', TRUE)
+VALUES ('admin', 'admin@agonx.com', '$2b$12$7.fTCAW9jejiLtpntpk5nuQWhv6nWAm5KXbKYHi.yMvg0Wi6thDnq', TRUE)
 ON DUPLICATE KEY UPDATE username = username;
