@@ -39,6 +39,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '智能体', icon: 'UserFilled' }
       },
       {
+        path: 'tools',
+        name: 'Tools',
+        component: () => import('@/views/Tools.vue'),
+        meta: { title: 'MCP工具', icon: 'Tools' }
+      },
+      {
         path: 'memory',
         name: 'Memory',
         component: () => import('@/views/Memory.vue'),

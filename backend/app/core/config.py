@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     
     # 基础配置
     APP_NAME: str = "AgonX"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "0.1.0"
     DEBUG: bool = True
     
     # API配置

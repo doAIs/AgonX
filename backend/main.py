@@ -104,9 +104,9 @@ def create_app() -> FastAPI:
     # 注册路由
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
     
-    # 注册MCP路由
+    # 注册MCP路由（挂载到 /api/v1 下）
     from app.mcp.server import mcp_server
-    app.include_router(mcp_server.get_router())
+    app.include_router(mcp_server.get_router(), prefix=settings.API_V1_PREFIX)
     
     # 健康检查
     @app.get("/health")

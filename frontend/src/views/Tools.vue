@@ -24,7 +24,7 @@
             
             <div class="tool-params">
               <h4>参数</h4>
-              <el-table :data="tool.schema.parameters" size="small" stripe>
+              <el-table :data="tool.schema.parameters" size="small" class="custom-table">
                 <el-table-column prop="name" label="参数名" width="120" />
                 <el-table-column prop="type" label="类型" width="80" />
                 <el-table-column prop="description" label="描述" />
@@ -118,12 +118,24 @@ interface Tool {
   }
 }
 
+interface ToolResponse {
+  count: number
+  tools: Tool[]
+}
+
 const tools = ref<Tool[]>([])
 const testDialogVisible = ref(false)
 const resultDialogVisible = ref(false)
 const currentTool = ref<Tool | null>(null)
 const testing = ref(false)
-const testResult = ref<any>(null)
+interface ToolExecuteResult {
+  success: boolean
+  tool: string
+  result?: any
+  error?: string
+}
+
+const testResult = ref<ToolExecuteResult | null>(null)
 
 const testForm = ref({
   arguments: {} as Record<string, any>
@@ -135,9 +147,19 @@ onMounted(async () => {
 
 async function loadTools() {
   try {
-    const response = await request.get('/mcp/tools')
-    tools.value = response.data.tools
+    // baseURL 已经是 /api/v1，所以只需要写 /mcp/tools
+    const response = await request.get('/mcp/tools') as ToolResponse
+    console.log('MCP Tools Response:', response)
+    
+    // 响应拦截器已经提取了 response.data，所以直接访问 response.tools
+    if (response && response.tools) {
+      tools.value = response.tools
+      console.log('Loaded tools:', tools.value)
+    } else {
+      ElMessage.error('数据格式错误')
+    }
   } catch (error) {
+    console.error('Load tools error:', error)
     ElMessage.error('加载工具列表失败')
   }
 }
@@ -173,16 +195,18 @@ async function testTool() {
   
   testing.value = true
   try {
+    // baseURL 已经是 /api/v1，所以只需要写 /mcp/execute
     const response = await request.post('/mcp/execute', {
       tool_name: currentTool.value.name,
       arguments: testForm.value.arguments
-    })
+    }) as ToolExecuteResult
     
-    testResult.value = response.data
+    // 响应拦截器已经提取了 response.data
+    testResult.value = response
     testDialogVisible.value = false
     resultDialogVisible.value = true
     
-    if (response.data.success) {
+    if (response.success) {
       ElMessage.success('工具执行成功')
     }
   } catch (error) {
@@ -300,5 +324,29 @@ async function testTool() {
   font-family: 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
+}
+
+/* 自定义表格样式 - 统一深色背景 */
+.custom-table :deep(.el-table) {
+  background-color: transparent;
+}
+
+.custom-table :deep(.el-table tr) {
+  background-color: rgba(22, 33, 62, 0.4) !important;
+}
+
+.custom-table :deep(.el-table th) {
+  background-color: rgba(22, 33, 62, 0.6) !important;
+  color: #a0aec0;
+  font-weight: 600;
+}
+
+.custom-table :deep(.el-table td) {
+  border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+  color: #cbd5e0;
+}
+
+.custom-table :deep(.el-table__body tr:hover > td) {
+  background-color: rgba(102, 126, 234, 0.15) !important;
 }
 </style>

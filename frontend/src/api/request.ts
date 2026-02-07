@@ -29,7 +29,8 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response: AxiosResponse) => {
-    return response.data
+    // 直接返回 data，这样外部调用时不需要再次访问 .data
+    return response.data as any
   },
   (error) => {
     if (error.response) {

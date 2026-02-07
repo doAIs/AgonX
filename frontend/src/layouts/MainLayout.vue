@@ -87,6 +87,7 @@ import {
   UserFilled, 
   Memo, 
   Setting,
+  Tools,
   Fold,
   Expand,
   ArrowDown
@@ -104,6 +105,7 @@ const menuItems = [
   { path: '/chat', title: '智能对话', icon: ChatDotRound },
   { path: '/knowledge', title: '知识库', icon: Collection },
   { path: '/agents', title: '智能体', icon: UserFilled },
+  { path: '/tools', title: 'MCP工具', icon: Tools },
   { path: '/memory', title: '记忆中心', icon: Memo },
   { path: '/settings', title: '模型配置', icon: Setting }
 ]
