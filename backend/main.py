@@ -1,5 +1,14 @@
+import os
+import time
+import sys
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+
+# 设置系统时区为东八区 (北京时间)
+os.environ['TZ'] = 'Asia/Shanghai'
+if sys.platform != 'win32':
+    time.tzset()
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings

@@ -11,7 +11,10 @@ async_engine = create_async_engine(
     echo=settings.DEBUG,
     pool_pre_ping=True,
     pool_size=10,
-    max_overflow=20
+    max_overflow=20,
+    connect_args={
+        "init_command": "SET time_zone='+08:00'"
+    }
 )
 
 # 异步会话工厂
@@ -27,7 +30,10 @@ AsyncSessionLocal = async_sessionmaker(
 sync_engine = create_engine(
     settings.MYSQL_URL_SYNC,
     echo=settings.DEBUG,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    connect_args={
+        "init_command": "SET time_zone='+08:00'"
+    }
 )
 
 SyncSessionLocal = sessionmaker(

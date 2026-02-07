@@ -187,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Plus,
@@ -345,6 +345,21 @@ async function deleteDocument(id: string) {
     ElMessage.error('删除失败')
   }
 }
+
+// 初始化加载知识库列表
+async function fetchCollections() {
+  try {
+    const res = await knowledgeApi.getCollections()
+    collections.value = res.data
+  } catch (err) {
+    console.error('获取知识库列表失败:', err)
+    ElMessage.error('获取知识库列表失败')
+  }
+}
+
+onMounted(() => {
+  fetchCollections()
+})
 </script>
 
 <style scoped>

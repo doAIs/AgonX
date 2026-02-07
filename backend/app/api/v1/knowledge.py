@@ -4,6 +4,7 @@
 from typing import List, Any
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
 
 from app.api.deps import get_db
 from app.core.security import get_current_active_user
@@ -29,7 +30,7 @@ async def create_knowledge_base(
     logger.info(f"用户 {current_user.username} 请求创建知识库: {kb_in.name}")
     kb_service = KnowledgeService(db)
     kb = await kb_service.create_knowledge_base(current_user.id, kb_in)
-    return ApiResponse(data=KnowledgeBaseResponse.from_orm(kb))
+    return ApiResponse(data=KnowledgeBaseResponse.model_validate(kb))
 
 @router.get("/collections", response_model=ApiResponse[List[KnowledgeBaseResponse]])
 async def list_knowledge_bases(
@@ -37,9 +38,11 @@ async def list_knowledge_bases(
     db: AsyncSession = Depends(get_db)
 ):
     """获取所有知识库列表"""
+    logger.info(f"用户 {current_user.username} 请求获取知识库列表")
     kb_service = KnowledgeService(db)
     kbs = await kb_service.get_user_knowledge_bases(current_user.id)
-    return ApiResponse(data=[KnowledgeBaseResponse.from_orm(kb) for kb in kbs])
+    logger.info(f"找到 {len(kbs)} 个知识库")
+    return ApiResponse(data=[KnowledgeBaseResponse.model_validate(kb) for kb in kbs])
 
 @router.get("/collections/{kb_id}", response_model=ApiResponse[KnowledgeBaseResponse])
 async def get_knowledge_base(
@@ -52,7 +55,7 @@ async def get_knowledge_base(
     kb = await kb_service.get_knowledge_base(kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
-    return ApiResponse(data=KnowledgeBaseResponse.from_orm(kb))
+    return ApiResponse(data=KnowledgeBaseResponse.model_validate(kb))
 
 @router.delete("/collections/{kb_id}", response_model=ApiResponse[None])
 async def delete_knowledge_base(
@@ -114,3 +117,54 @@ async def update_retrieval_config(
         search_mode=updated_kb.search_mode,
         rerank_enabled=updated_kb.rerank_enabled
     ))
+
+@router.get("/collections/{kb_id}/documents", response_model=ApiResponse[PaginatedResponse[DocumentResponse]])
+async def list_documents(
+    kb_id: str,
+    page: int = 1,
+    page_size: int = 20,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """获取知识库文档列表"""
+    # 简单实现，后续可移入 service
+    from sqlalchemy import select
+    from app.models.knowledge import Document
+    
+    # 验证权限
+    kb_service = KnowledgeService(db)
+    kb = await kb_service.get_knowledge_base(kb_id)
+    if not kb or kb.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+        
+    result = await db.execute(
+        select(Document).where(Document.knowledge_base_id == kb_id)
+        .offset((page - 1) * page_size).limit(page_size)
+    )
+    docs = result.scalars().all()
+    
+    total_result = await db.execute(
+        select(func.count()).select_from(Document).where(Document.knowledge_base_id == kb_id)
+    )
+    total = total_result.scalar()
+    
+    return ApiResponse(data=PaginatedResponse(
+        items=[DocumentResponse.model_validate(doc) for doc in docs],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=(total + page_size - 1) // page_size
+    ))
+
+@router.post("/upload")
+async def upload_document(
+    collection_id: str = File(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """上传文档接口"""
+    # TODO: 实现文件保存到 MinIO 并触发向量化流程
+    logger.info(f"用户 {current_user.username} 上传文件: {file.filename} 到知识库: {collection_id}")
+    return ApiResponse(message="文件已进入处理队列")
+

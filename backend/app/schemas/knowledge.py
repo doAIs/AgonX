@@ -38,11 +38,11 @@ class KnowledgeBaseResponse(BaseModel):
     id: str
     name: str
     description: Optional[str]
-    document_count: int = 0
     created_at: datetime
     
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 # 文档相关

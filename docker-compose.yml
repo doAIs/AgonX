@@ -21,6 +21,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - TZ=Asia/Shanghai
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
       - MYSQL_USER=agonx
@@ -53,6 +54,7 @@ services:
     ports:
       - "3306:3306"
     environment:
+      - TZ=Asia/Shanghai
       - MYSQL_ROOT_PASSWORD=root_password
       - MYSQL_DATABASE=agonx
       - MYSQL_USER=agonx
