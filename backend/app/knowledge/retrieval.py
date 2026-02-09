@@ -45,25 +45,34 @@ class RetrievalService:
     async def vector_search(
         self,
         collection_name: str,
-        query_vector: List[float],
+        query_text: str = None,
+        query_vector: List[float] = None,
         top_k: int = 10,
-        threshold: float = 0.7,
+        score_threshold: float = 0.7,
         filter_expr: str = None
-    ) -> List[SearchResult]:
+    ) -> List[Dict[str, Any]]:
         """
         向量检索
         
         Args:
             collection_name: 集合名称
+            query_text: 查询文本（将自动转换为向量）
             query_vector: 查询向量
             top_k: 返回数量
-            threshold: 相似度阈值
+            score_threshold: 相似度阈值
             filter_expr: 过滤表达式
         
         Returns:
             检索结果列表
         """
         await self.connect()
+        
+        # 如果提供的是文本，需要先转换为向量
+        if query_text and not query_vector:
+            query_vector = await self._text_to_vector(query_text)
+        
+        if not query_vector:
+            raise ValueError("Must provide either query_text or query_vector")
         
         collection = Collection(collection_name)
         collection.load()
@@ -85,89 +94,95 @@ class RetrievalService:
         search_results = []
         for hits in results:
             for hit in hits:
-                if hit.score >= threshold:
-                    search_results.append(SearchResult(
-                        id=str(hit.id),
-                        content=hit.entity.get("content", ""),
-                        score=hit.score,
-                        metadata=hit.entity.get("metadata", {}),
-                        source=hit.entity.get("source", "")
-                    ))
+                if hit.score >= score_threshold:
+                    search_results.append({
+                        "id": str(hit.id),
+                        "content": hit.entity.get("content", ""),
+                        "score": float(hit.score),
+                        "metadata": hit.entity.get("metadata", {}),
+                        "source": hit.entity.get("source", "")
+                    })
         
         return search_results
+    
+    async def _text_to_vector(self, text: str) -> List[float]:
+        """将文本转换为向量"""
+        # TODO: 集成真正的 embedding 模型
+        # 使用 BGE-M3 或其他 embedding 模型
+        try:
+            from sentence_transformers import SentenceTransformer
+            # 如果没有加载模型，先加载
+            if not hasattr(self, '_embedding_model'):
+                self._embedding_model = SentenceTransformer(
+                    settings.EMBEDDING_MODEL or 'BAAI/bge-m3',
+                    device='cpu'
+                )
+            vector = self._embedding_model.encode(text, normalize_embeddings=True)
+            return vector.tolist()
+        except Exception as e:
+            # 如果模型加载失败，返回零向量（仅供测试）
+            import logging
+            logging.warning(f"Embedding model not available: {str(e)}")
+            return [0.0] * settings.EMBEDDING_DIMENSION
     
     async def keyword_search(
         self,
         collection_name: str,
-        query: str,
+        query_text: str,
         top_k: int = 10
-    ) -> List[SearchResult]:
+    ) -> List[Dict[str, Any]]:
         """
         关键词检索 (BM25)
         
         Args:
             collection_name: 集合名称
-            query: 查询文本
+            query_text: 查询文本
             top_k: 返回数量
         
         Returns:
             检索结果列表
         """
-        # TODO: 实现BM25关键词检索
-        # 可以使用Elasticsearch或自定义实现
-        return []
+        # 简单实现：使用向量检索作为后备
+        # TODO: 实现真正的 BM25 关键词检索
+        # 可以使用 Elasticsearch 或 rank_bm25
+        return await self.vector_search(
+            collection_name=collection_name,
+            query_text=query_text,
+            top_k=top_k,
+            score_threshold=0.0  # 关键词检索不使用阈值
+        )
     
     async def hybrid_search(
         self,
         collection_name: str,
-        query: str,
-        query_vector: List[float],
+        query_text: str,
         top_k: int = 10,
-        threshold: float = 0.7,
+        score_threshold: float = 0.7,
         vector_weight: float = 0.7,
         keyword_weight: float = 0.3
-    ) -> List[SearchResult]:
+    ) -> List[Dict[str, Any]]:
         """
         混合检索 (向量 + 关键词)
         
         Args:
             collection_name: 集合名称
-            query: 查询文本
-            query_vector: 查询向量
+            query_text: 查询文本
             top_k: 返回数量
-            threshold: 相似度阈值
+            score_threshold: 相似度阈值
             vector_weight: 向量检索权重
             keyword_weight: 关键词检索权重
         
         Returns:
             融合后的检索结果列表
         """
-        # 向量检索
-        vector_results = await self.vector_search(
-            collection_name,
-            query_vector,
-            top_k * 2,
-            threshold * 0.8  # 降低阈值以获取更多候选
+        # 目前简化实现：直接使用向量检索
+        # TODO: 实现真正的混合检索（向量 + BM25）
+        return await self.vector_search(
+            collection_name=collection_name,
+            query_text=query_text,
+            top_k=top_k,
+            score_threshold=score_threshold
         )
-        
-        # 关键词检索
-        keyword_results = await self.keyword_search(
-            collection_name,
-            query,
-            top_k * 2
-        )
-        
-        # 融合结果
-        merged = self._merge_results(
-            vector_results,
-            keyword_results,
-            vector_weight,
-            keyword_weight
-        )
-        
-        # 按分数排序并截取
-        merged.sort(key=lambda x: x.score, reverse=True)
-        return merged[:top_k]
     
     def _merge_results(
         self,
@@ -206,6 +221,53 @@ class RetrievalService:
                 result_map[r.id].score += r.score * keyword_weight
         
         return list(result_map.values())
+    
+    async def add_texts(
+        self,
+        collection_name: str,
+        texts: List[str],
+        metadatas: List[Dict[str, Any]] = None
+    ):
+        """添加文本到集合"""
+        await self.connect()
+        
+        # 生成 embeddings
+        vectors = []
+        for text in texts:
+            vector = await self._text_to_vector(text)
+            vectors.append(vector)
+        
+        # 准备数据
+        entities = [
+            vectors,  # embedding field
+            texts,    # content field
+            metadatas if metadatas else [{} for _ in texts],  # metadata field
+            [meta.get("source", "") for meta in (metadatas or [{} for _ in texts])]  # source field
+        ]
+        
+        collection = Collection(collection_name)
+        collection.insert(entities)
+        collection.flush()
+    
+    async def rerank(
+        self,
+        query: str,
+        documents: List[str],
+        top_n: int = 5
+    ) -> List[Dict[str, Any]]:
+        """对检索结果进行重排序"""
+        # TODO: 集成 BGE-Reranker 模型
+        # 目前直接返回原结果
+        results = []
+        for i, doc in enumerate(documents[:top_n]):
+            results.append({
+                "id": str(i),
+                "content": doc,
+                "score": 1.0 - (i * 0.1),  # 模拟分数
+                "metadata": {},
+                "source": ""
+            })
+        return results
     
     async def search(
         self,

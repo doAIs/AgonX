@@ -164,6 +164,9 @@ dist-ssr/
 # AgonX specific
 backend/logs/
 backend/.env
+backend/config.local.yaml
+backend/temp/
+backend/models/
 frontend/.env.development.local
 frontend/.env.production.local
 frontend/.env.local

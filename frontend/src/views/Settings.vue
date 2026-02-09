@@ -291,10 +291,19 @@ function editModel(model: ModelConfig) {
 
 async function testModel(model: ModelConfig) {
   ElMessage.info(`正在测试 ${model.name}...`)
-  // 模拟测试
-  setTimeout(() => {
-    ElMessage.success(`${model.name} 连接成功`)
-  }, 1000)
+  try {
+    const response = await request.post('/settings/models/test', {
+      provider: model.provider,
+      api_base: model.api_base,
+      api_key: model.api_key,
+      model: model.model
+    })
+    if (response.data.status === 'success') {
+      ElMessage.success(response.data.message)
+    }
+  } catch (error) {
+    ElMessage.error('模型连接测试失败')
+  }
 }
 
 async function setDefaultModel(model: ModelConfig) {

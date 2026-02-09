@@ -11,6 +11,9 @@ from app.schemas.knowledge import (
     RetrievalConfigUpdate, RetrievalConfigResponse,
     DocumentResponse, SearchRequest, SearchResult
 )
+from app.schemas.model_config import (
+    ModelConfigCreate, ModelConfigUpdate, ModelConfigResponse
+)
 from app.schemas.common import ApiResponse, PaginatedResponse, ErrorResponse
 
 __all__ = [
@@ -23,6 +26,8 @@ __all__ = [
     "KnowledgeBaseCreate", "KnowledgeBaseUpdate", "KnowledgeBaseResponse",
     "RetrievalConfigUpdate", "RetrievalConfigResponse",
     "DocumentResponse", "SearchRequest", "SearchResult",
+    # Model Config
+    "ModelConfigCreate", "ModelConfigUpdate", "ModelConfigResponse",
     # Common
     "ApiResponse", "PaginatedResponse", "ErrorResponse"
 ]

@@ -164,7 +164,289 @@ async def upload_document(
     db: AsyncSession = Depends(get_db)
 ):
     """上传文档接口"""
-    # TODO: 实现文件保存到 MinIO 并触发向量化流程
+    import uuid
+    import os
+    from minio import Minio
+    from minio.error import S3Error
+    from app.core.config import settings
+    from app.models.knowledge import Document
+    
     logger.info(f"用户 {current_user.username} 上传文件: {file.filename} 到知识库: {collection_id}")
-    return ApiResponse(message="文件已进入处理队列")
+    
+    # 验证知识库权限
+    kb_service = KnowledgeService(db)
+    kb = await kb_service.get_knowledge_base(collection_id)
+    if not kb or kb.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    
+    try:
+        # 1. 初始化 MinIO 客户端
+        minio_client = Minio(
+            settings.MINIO_ENDPOINT.replace('http://', '').replace('https://', ''),
+            access_key=settings.MINIO_ACCESS_KEY,
+            secret_key=settings.MINIO_SECRET_KEY,
+            secure=False
+        )
+        
+        # 确保 bucket 存在
+        bucket_name = "agonx-documents"
+        if not minio_client.bucket_exists(bucket_name):
+            minio_client.make_bucket(bucket_name)
+        
+        # 2. 生成文件路径
+        doc_id = str(uuid.uuid4())
+        file_ext = os.path.splitext(file.filename)[1]
+        object_name = f"{collection_id}/{doc_id}{file_ext}"
+        
+        # 3. 上传文件到 MinIO
+        file_content = await file.read()
+        file_size = len(file_content)
+        
+        from io import BytesIO
+        minio_client.put_object(
+            bucket_name,
+            object_name,
+            BytesIO(file_content),
+            length=file_size,
+            content_type=file.content_type or 'application/octet-stream'
+        )
+        
+        # 4. 创建文档记录
+        document = Document(
+            id=doc_id,
+            knowledge_base_id=collection_id,
+            filename=file.filename,
+            file_path=object_name,
+            file_size=file_size,
+            file_type=file_ext,
+            status="processing"
+        )
+        db.add(document)
+        await db.commit()
+        await db.refresh(document)
+        
+        # 5. 异步触发向量化任务（后台处理）
+        # TODO: 实现异步任务队列（Celery 或 asyncio task）
+        # 暂时同步处理
+        try:
+            await _process_document_vectorization(
+                doc_id, 
+                collection_id, 
+                kb.collection_name,
+                object_name, 
+                file_content, 
+                db
+            )
+        except Exception as e:
+            logger.error(f"向量化失败: {str(e)}")
+            document.status = "failed"
+            document.error_message = str(e)
+            await db.commit()
+        
+        logger.info(f"文档上传成功: {file.filename}")
+        return ApiResponse(
+            message="文件已上传，正在处理",
+            data={"document_id": doc_id, "status": document.status}
+        )
+    
+    except S3Error as e:
+        logger.error(f"MinIO 上传失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+    except Exception as e:
+        logger.error(f"文档上传失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+async def _process_document_vectorization(
+    doc_id: str,
+    kb_id: str,
+    collection_name: str,
+    file_path: str,
+    file_content: bytes,
+    db: AsyncSession
+):
+    """处理文档向量化"""
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+    from app.knowledge.retrieval import retrieval_service
+    from app.models.knowledge import Document
+    from sqlalchemy import select
+    import tempfile
+    import os
+    
+    logger.info(f"开始处理文档 {doc_id} 的向量化")
+    
+    # 1. 将文件写入临时文件
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_path)[1]) as tmp:
+        tmp.write(file_content)
+        tmp_path = tmp.name
+    
+    try:
+        # 2. 根据文件类型加载文档
+        file_ext = os.path.splitext(file_path)[1].lower()
+        
+        if file_ext == '.pdf':
+            loader = PyPDFLoader(tmp_path)
+        elif file_ext in ['.txt', '.md']:
+            loader = TextLoader(tmp_path, encoding='utf-8')
+        elif file_ext in ['.doc', '.docx']:
+            loader = Docx2txtLoader(tmp_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
+        
+        documents = loader.load()
+        
+        # 3. 文档分块
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=512,
+            chunk_overlap=50,
+            length_function=len
+        )
+        chunks = text_splitter.split_documents(documents)
+        
+        # 4. 生成 embedding 并存储到 Milvus
+        await retrieval_service.connect()
+        
+        texts = [chunk.page_content for chunk in chunks]
+        metadatas = [
+            {
+                "document_id": doc_id,
+                "kb_id": kb_id,
+                "page": chunk.metadata.get("page", 0),
+                "source": file_path
+            }
+            for chunk in chunks
+        ]
+        
+        # 使用 retrieval_service 插入向量
+        await retrieval_service.add_texts(
+            collection_name=collection_name,
+            texts=texts,
+            metadatas=metadatas
+        )
+        
+        # 5. 更新文档状态
+        doc_query = select(Document).where(Document.id == doc_id)
+        result = await db.execute(doc_query)
+        document = result.scalar_one()
+        
+        document.status = "completed"
+        document.chunk_count = len(chunks)
+        await db.commit()
+        
+        logger.info(f"文档 {doc_id} 向量化完成，共 {len(chunks)} 个分块")
+        
+    finally:
+        # 清理临时文件
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+@router.post("/search", response_model=ApiResponse[List[SearchResult]])
+async def search_knowledge(
+    search_req: SearchRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """知识库检索接口"""
+    logger.info(f"用户 {current_user.username} 请求检索: {search_req.query}")
+    
+    # 验证权限
+    kb_service = KnowledgeService(db)
+    kb = await kb_service.get_knowledge_base(search_req.collection_id)
+    if not kb or kb.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    
+    try:
+        from app.knowledge.retrieval import retrieval_service
+        
+        # 连接 Milvus
+        await retrieval_service.connect()
+        
+        # 根据检索模式进行检索
+        search_mode = search_req.search_mode or kb.search_mode
+        top_k = search_req.top_k or kb.top_k
+        
+        if search_mode == "vector":
+            # 纯向量检索
+            results = await retrieval_service.vector_search(
+                collection_name=kb.collection_name,
+                query_text=search_req.query,
+                top_k=top_k,
+                score_threshold=search_req.similarity_threshold or kb.similarity_threshold
+            )
+        elif search_mode == "keyword":
+            # 关键词检索（简单实现，可使用 BM25）
+            results = await retrieval_service.keyword_search(
+                collection_name=kb.collection_name,
+                query_text=search_req.query,
+                top_k=top_k
+            )
+        elif search_mode == "hybrid":
+            # 混合检索
+            results = await retrieval_service.hybrid_search(
+                collection_name=kb.collection_name,
+                query_text=search_req.query,
+                top_k=top_k,
+                score_threshold=search_req.similarity_threshold or kb.similarity_threshold
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported search mode: {search_mode}")
+        
+        # 如果启用 Reranker，进行重排序
+        if kb.rerank_enabled and results:
+            results = await retrieval_service.rerank(
+                query=search_req.query,
+                documents=[r["content"] for r in results],
+                top_n=kb.top_n
+            )
+        
+        # 转换为响应格式
+        search_results = [
+            SearchResult(
+                id=str(r.get("id", "")),
+                content=r.get("content", ""),
+                score=float(r.get("score", 0.0)),
+                metadata=r.get("metadata", {}),
+                source=r.get("source", "")
+            )
+            for r in results
+        ]
+        
+        logger.info(f"检索完成，返回 {len(search_results)} 条结果")
+        return ApiResponse(data=search_results)
+    
+    except Exception as e:
+        logger.error(f"检索失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@router.delete("/documents/{document_id}", response_model=ApiResponse[None])
+async def delete_document(
+    document_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """删除文档"""
+    from app.models.knowledge import Document
+    from sqlalchemy import select
+    
+    # 查找文档
+    doc_query = select(Document).where(Document.id == document_id)
+    result = await db.execute(doc_query)
+    document = result.scalar_one_or_none()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # 验证权限（通过知识库）
+    kb_service = KnowledgeService(db)
+    kb = await kb_service.get_knowledge_base(document.knowledge_base_id)
+    if not kb or kb.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    # 删除文档
+    await db.delete(document)
+    await db.commit()
+    
+    logger.info(f"用户 {current_user.username} 删除文档: {document.filename}")
+    return ApiResponse(message="文档已删除")
 
