@@ -196,6 +196,7 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, DataAnalysis, Connection } from '@element-plus/icons-vue'
 import type { ModelConfig } from '@/types'
+import request from '@/api/request'
 
 const activeTab = ref('llm')
 const showAddDialog = ref(false)
@@ -294,15 +295,20 @@ async function testModel(model: ModelConfig) {
   try {
     const response = await request.post('/settings/models/test', {
       provider: model.provider,
-      api_base: model.api_base,
+      api_base: model.base_url || model.api_base || '',
       api_key: model.api_key,
-      model: model.model
+      model: model.model || model.name  // 使用 model 字段，如果没有则用 name
     })
-    if (response.data.status === 'success') {
-      ElMessage.success(response.data.message)
+    if (response.data && response.data.status === 'success') {
+      const latency = response.data.latency_ms ? ` (延迟: ${response.data.latency_ms}ms)` : ''
+      ElMessage.success(response.data.message + latency)
+    } else {
+      ElMessage.error('模型连接测试失败')
     }
-  } catch (error) {
-    ElMessage.error('模型连接测试失败')
+  } catch (error: any) {
+    console.error('测试失败:', error)
+    const errorMsg = error?.response?.data?.detail || error?.message || '连接失败'
+    ElMessage.error(`测试失败: ${errorMsg}`)
   }
 }
 
@@ -326,13 +332,24 @@ async function testConnection() {
   testResult.message = ''
   
   try {
-    // 模拟测试连接
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    testResult.status = 'success'
-    testResult.message = '连接成功!'
-  } catch {
+    // 调用真实的后端测试接口
+    const response = await request.post('/settings/models/test', {
+      provider: modelForm.provider,
+      api_base: modelForm.base_url || '',
+      api_key: modelForm.api_key,
+      model: modelForm.name  // 使用表单中的模型名称
+    })
+    
+    if (response.data && response.data.status === 'success') {
+      testResult.status = 'success'
+      testResult.message = response.data.message || '连接成功!'
+    } else {
+      testResult.status = 'error'
+      testResult.message = '连接失败'
+    }
+  } catch (error: any) {
     testResult.status = 'error'
-    testResult.message = '连接失败'
+    testResult.message = error?.response?.data?.detail || error?.message || '连接失败，请检查 API Key 和模型配置'
   } finally {
     testing.value = false
   }

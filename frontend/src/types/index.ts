@@ -110,6 +110,8 @@ export interface ModelConfig {
   model_type: 'llm' | 'embedding'
   api_key: string
   base_url: string
+  api_base?: string  // 兼容字段
+  model?: string     // 模型标识符，如 gpt-4, qwen-max
   is_default: boolean
   temperature?: number
   top_p?: number
