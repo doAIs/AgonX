@@ -7,13 +7,13 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 
-from app.api.deps import get_db
-from app.core.security import get_current_active_user
-from app.models.user import User
-from app.models.model_config import ModelConfig
-from app.schemas.model_config import ModelConfigCreate, ModelConfigUpdate, ModelConfigResponse
-from app.schemas.common import ApiResponse
-from app.core.logger import logger
+from backend.app.api.deps import get_db
+from backend.app.core.security import get_current_active_user
+from backend.app.models.user import User
+from backend.app.models.model_config import ModelConfig
+from backend.app.schemas.model_config import ModelConfigCreate, ModelConfigUpdate, ModelConfigResponse
+from backend.app.schemas.common import ApiResponse
+from backend.app.core.logger import logger
 
 router = APIRouter(prefix="/settings", tags=["配置"])
 

@@ -2,10 +2,10 @@
 导出路由
 """
 from fastapi import APIRouter, Depends
-from app.api.deps import get_db
-from app.core.security import get_current_active_user
-from app.models.user import User
-from app.schemas.common import ApiResponse
+from backend.app.api.deps import get_db
+from backend.app.core.security import get_current_active_user
+from backend.app.models.user import User
+from backend.app.schemas.common import ApiResponse
 
 router = APIRouter(prefix="/export", tags=["导出"])
 

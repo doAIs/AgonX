@@ -3,7 +3,7 @@ MCP 客户端 - 用于智能体调用工具
 """
 from typing import Dict, Any, List, Optional
 import json
-from app.mcp.base import tool_registry
+from backend.app.mcp.base import tool_registry
 
 
 class MCPClient:

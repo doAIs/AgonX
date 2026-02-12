@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 import httpx
 from datetime import datetime
 
-from app.mcp.base import MCPTool, MCPToolParameter
+from backend.app.mcp.base import MCPTool, MCPToolParameter
 
 
 class WeatherTool(MCPTool):

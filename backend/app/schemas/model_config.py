@@ -1,10 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
 
 class ModelConfigBase(BaseModel):
     """模型配置基础Schema"""
+    model_config = ConfigDict(protected_namespaces=())
+    
     name: str
     provider: str  # openai, anthropic, deepseek, qwen, glm
     model_type: str  # llm, embedding
@@ -33,6 +35,8 @@ class ModelConfigUpdate(BaseModel):
 
 class ModelConfigResponse(BaseModel):
     """模型配置响应"""
+    model_config = ConfigDict(protected_namespaces=(), from_attributes=True)
+    
     id: int
     user_id: int
     name: str
@@ -46,6 +50,3 @@ class ModelConfigResponse(BaseModel):
     max_tokens: int
     created_at: datetime
     updated_at: datetime
-    
-    class Config:
-        from_attributes = True

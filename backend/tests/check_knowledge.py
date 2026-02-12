@@ -162,7 +162,7 @@ async def test_document_processing():
         await retrieval_service.connect()
         
         texts = ["这是测试文本", "这是另一个测试"]
-        metadatas = [{"test": "data"}, {"test": "data2"}]
+        metadatas = [{"tests": "data"}, {"tests": "data2"}]
         
         # 检查集合是否存在
         from pymilvus import utility

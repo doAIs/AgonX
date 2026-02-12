@@ -51,7 +51,7 @@ try:
     # 测试编码
     test_texts = [
         "这是一个测试句子",
-        "This is a test sentence",
+        "This is a tests sentence",
         "AgonX is a multi-agent platform"
     ]
     

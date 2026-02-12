@@ -6,10 +6,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.api.deps import get_db
-from app.core.security import get_current_active_user
-from app.models import User, ChatSession, ChatMessage
-from app.schemas import (
+from backend.app.api.deps import get_db
+from backend.app.core.security import get_current_active_user
+from backend.app.models import User, ChatSession, ChatMessage
+from backend.app.schemas import (
     SessionCreate, SessionUpdate, SessionResponse,
     MessageCreate, MessageResponse, ApiResponse, PaginatedResponse
 )

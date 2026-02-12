@@ -45,7 +45,7 @@ AgonX 已经集成了完整的 MCP 工具系统，允许智能体调用外部工
 
 **示例调用**:
 ```python
-from app.mcp.client import MCPClient
+from backend.app.mcp.client import MCPClient
 
 client = MCPClient()
 result = await client.call_tool("get_weather", {
@@ -106,7 +106,7 @@ result = await client.call_tool("query_order", {
 在 `backend/app/mcp/tools/` 目录下创建新文件，继承 `MCPTool` 基类：
 
 ```python
-from app.mcp.base import MCPTool, MCPToolParameter
+from backend.app.mcp.base import MCPTool, MCPToolParameter
 from typing import Dict, Any, List
 
 class MyCustomTool(MCPTool):
@@ -144,7 +144,7 @@ class MyCustomTool(MCPTool):
 在 `backend/main.py` 的 `lifespan` 函数中注册：
 
 ```python
-from app.mcp.tools.my_custom import MyCustomTool
+from backend.app.mcp.tools.my_custom import MyCustomTool
 
 mcp_server.register_tool(MyCustomTool())
 ```
@@ -154,10 +154,10 @@ mcp_server.register_tool(MyCustomTool())
 工具会自动在 `researcher_node` 中通过关键词匹配调用，或者手动调用：
 
 ```python
-from app.mcp.client import MCPClient
+from backend.app.mcp.client import MCPClient
 
 mcp_client = MCPClient()
-result = await mcp_client.call_tool("my_custom_tool", {"param1": "test"})
+result = await mcp_client.call_tool("my_custom_tool", {"param1": "tests"})
 ```
 
 ## API 端点
