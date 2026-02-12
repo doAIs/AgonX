@@ -299,15 +299,21 @@ async function createCollection() {
   }
 }
 
-function handleUploadSuccess() {
-  ElMessage.success('上传成功')
+function handleUploadSuccess(response: any) {
+  console.log('上传成功:', response)
+  ElMessage.success('文件上传成功，正在处理中...')
   if (currentCollection.value) {
-    selectCollection(currentCollection.value)
+    // 延迟刷新，等待后端处理完成
+    setTimeout(() => {
+      selectCollection(currentCollection.value!)
+    }, 2000)
   }
 }
 
-function handleUploadError() {
-  ElMessage.error('上传失败')
+function handleUploadError(error: any) {
+  console.error('上传失败:', error)
+  const errorMsg = error?.response?.data?.detail || error?.message || '上传失败，请检查后端日志'
+  ElMessage.error(`上传失败: ${errorMsg}`)
 }
 
 async function saveConfig() {

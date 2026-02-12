@@ -3,7 +3,9 @@
 """
 import asyncio
 from sqlalchemy import text
-from app.core.database import async_engine
+
+from backend.app.core.database import async_engine
+
 
 async def update_password():
     """更新admin用户的密码哈希"""

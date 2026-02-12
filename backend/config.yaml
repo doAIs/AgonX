@@ -60,9 +60,10 @@ minio:
 
 # Embedding 模型配置
 embedding:
-  model: "BAAI/bge-m3"
+  model: "F:/modules/bge-m3/BAAI/bge-m3"  # 使用本地模型路径
   device: "cpu"  # 可选: cpu, cuda
   cache_folder: "./models"
+  dimension: 1024  # BGE-M3 向量维度
 
 # LLM 模型配置 (默认模型)
 llm:

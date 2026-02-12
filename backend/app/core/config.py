@@ -75,6 +75,8 @@ class Settings(BaseSettings):
     DEFAULT_EMBEDDING_MODEL: str = yaml_config.get("embedding.model", "BAAI/bge-m3")
     EMBEDDING_MODEL: str = yaml_config.get("embedding.model", "BAAI/bge-m3")  # 兼容旧代码
     EMBEDDING_DEVICE: str = yaml_config.get("embedding.device", "cpu")
+    EMBEDDING_CACHE_FOLDER: str = yaml_config.get("embedding.cache_folder", "./models")
+    EMBEDDING_DIMENSION: int = int(yaml_config.get("embedding.dimension", 1024))
     
     # 知识库默认配置
     DEFAULT_CHUNK_SIZE: int = int(yaml_config.get("knowledge.chunk_size", 512))

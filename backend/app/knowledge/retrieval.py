@@ -107,22 +107,37 @@ class RetrievalService:
     
     async def _text_to_vector(self, text: str) -> List[float]:
         """将文本转换为向量"""
-        # TODO: 集成真正的 embedding 模型
-        # 使用 BGE-M3 或其他 embedding 模型
         try:
             from sentence_transformers import SentenceTransformer
             # 如果没有加载模型，先加载
             if not hasattr(self, '_embedding_model'):
-                self._embedding_model = SentenceTransformer(
-                    settings.EMBEDDING_MODEL or 'BAAI/bge-m3',
-                    device='cpu'
-                )
+                model_path = settings.EMBEDDING_MODEL or 'BAAI/bge-m3'
+                logger.info(f"正在加载 Embedding 模型: {model_path}")
+                
+                # 检查是否是本地路径
+                import os
+                if os.path.exists(model_path):
+                    logger.info(f"从本地路径加载模型: {model_path}")
+                    self._embedding_model = SentenceTransformer(
+                        model_path,
+                        device=settings.EMBEDDING_DEVICE or 'cpu'
+                    )
+                else:
+                    logger.info(f"从 HuggingFace 下载模型: {model_path}")
+                    self._embedding_model = SentenceTransformer(
+                        model_path,
+                        device=settings.EMBEDDING_DEVICE or 'cpu',
+                        cache_folder=settings.EMBEDDING_CACHE_FOLDER
+                    )
+                logger.info("Embedding 模型加载成功")
+            
             vector = self._embedding_model.encode(text, normalize_embeddings=True)
             return vector.tolist()
         except Exception as e:
+            logger.error(f"Embedding 模型加载或编码失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
             # 如果模型加载失败，返回零向量（仅供测试）
-            import logging
-            logging.warning(f"Embedding model not available: {str(e)}")
             return [0.0] * settings.EMBEDDING_DIMENSION
     
     async def keyword_search(
