@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from backend.app.mcp.base import tool_registry, MCPTool
+from app.mcp.base import tool_registry, MCPTool
 
 
 class ToolExecuteRequest(BaseModel):

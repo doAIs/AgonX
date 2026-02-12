@@ -3,7 +3,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.app.core.config import settings
+from app.core.config import settings
 
 # 异步引擎
 async_engine = create_async_engine(

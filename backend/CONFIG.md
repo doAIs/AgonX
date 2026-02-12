@@ -170,14 +170,14 @@ export JWT_SECRET_KEY=very-secure-jwt-key
 ## 在代码中使用配置
 
 ```python
-from backend.app.core.config import settings
+from app.core.config import settings
 
 # 直接使用
 print(settings.MYSQL_HOST)
 print(settings.MINIO_ENDPOINT)
 
 # 使用 YAML 配置加载器
-from backend.app.core.yaml_config import config
+from app.core.yaml_config import config
 
 # 获取配置值
 mysql_host = config.get("mysql.host")

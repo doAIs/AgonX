@@ -5,7 +5,7 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import Optional
-from backend.app.core.yaml_config import config as yaml_config
+from app.core.yaml_config import config as yaml_config
 
 
 class Settings(BaseSettings):

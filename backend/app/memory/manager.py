@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import redis.asyncio as redis
 
-from backend.app.core.config import settings
+from app.core.config import settings
 
 
 class ShortTermMemory:

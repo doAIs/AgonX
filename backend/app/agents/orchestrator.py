@@ -5,7 +5,7 @@ AgonX 多智能体编排器
 from typing import TypedDict, List, Optional, Any
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from backend.app.mcp.client import MCPClient
+from app.mcp.client import MCPClient
 
 
 class AgentState(TypedDict):

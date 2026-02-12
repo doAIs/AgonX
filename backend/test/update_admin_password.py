@@ -4,7 +4,7 @@
 import asyncio
 from sqlalchemy import text
 
-from backend.app.core.database import async_engine
+from app.core.database import async_engine
 
 
 async def update_password():

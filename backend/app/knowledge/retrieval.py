@@ -5,7 +5,7 @@
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from pymilvus import connections, Collection, utility
-from backend.app.core.config import settings
+from app.core.config import settings
 
 
 @dataclass

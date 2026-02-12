@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import random
 
-from backend.app.mcp.base import MCPTool, MCPToolParameter
+from app.mcp.base import MCPTool, MCPToolParameter
 
 
 class OrderQueryTool(MCPTool):

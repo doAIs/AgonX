@@ -6,17 +6,17 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
 
-from backend.app.api.deps import get_db
-from backend.app.core.security import get_current_active_user
-from backend.app.models.user import User
-from backend.app.schemas.knowledge import (
+from app.api.deps import get_db
+from app.core.security import get_current_active_user
+from app.models.user import User
+from app.schemas.knowledge import (
     KnowledgeBaseCreate, KnowledgeBaseResponse, KnowledgeBaseUpdate,
     RetrievalConfigUpdate, RetrievalConfigResponse, DocumentResponse,
     SearchRequest, SearchResult
 )
-from backend.app.schemas.common import ApiResponse, PaginatedResponse
-from backend.app.services.knowledge_service import KnowledgeService
-from backend.app.core.logger import logger
+from app.schemas.common import ApiResponse, PaginatedResponse
+from app.services.knowledge_service import KnowledgeService
+from app.core.logger import logger
 
 router = APIRouter(prefix="/knowledge", tags=["知识库"])
 
