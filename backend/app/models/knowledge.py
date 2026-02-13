@@ -48,11 +48,25 @@ class Document(Base):
     error_message = Column(Text, nullable=True)
     meta_data = Column(JSON, nullable=True)
     
+    # 富媒体相关字段
+    content_type = Column(String(50), default='text')  # text, mixed, image-heavy
+    page_count = Column(Integer, default=0)
+    has_images = Column(Boolean, default=False)
+    has_tables = Column(Boolean, default=False)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # 关系
     knowledge_base = relationship("KnowledgeBase", back_populates="documents")
+    pages = relationship("DocumentPage", back_populates="document", cascade="all, delete-orphan")
+    elements = relationship("DocumentElement", back_populates="document", cascade="all, delete-orphan")
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Document(id={self.id}, filename={self.filename})>"
+
+
+# 导入富媒体模型以便SQLAlchemy正确解析关系
+# 这个导入必须放在文件末尾，避录循环导入
+from app.models.document_rich import DocumentPage, DocumentElement, DocumentChunk, OCRTask

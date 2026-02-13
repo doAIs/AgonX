@@ -1,0 +1,22 @@
+AgonX 多智能体协作平台
+
+AgonX 是一个基于 LangGraph 和 LangChain 的多智能体协作平台。
+
+核心功能：
+1. 多智能体编排：支持创建和管理多个AI智能体
+2. 知识库管理：支持文档上传、向量化存储和语义检索
+3. 模型配置：支持多种LLM模型的接入和测试
+4. MCP协议：支持Model Context Protocol工具调用
+
+技术栈：
+- 前端：Vue3 + TypeScript + Vite
+- 后端：FastAPI + Python + SQLAlchemy
+- 向量数据库：Milvus
+- 对象存储：MinIO
+- 嵌入模型：BGE-M3
+
+检索能力：
+- 向量检索：基于语义相似度的检索
+- 关键词检索：基于BM25算法的检索
+- 混合检索：结合向量和关键词的混合检索
+- 重排序：使用BGE-Reranker进行结果优化

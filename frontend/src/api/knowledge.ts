@@ -9,6 +9,35 @@ export interface SearchResult {
   source: string
 }
 
+export interface EnhancedSearchResult {
+  id: string
+  content: string
+  score: number
+  context: {
+    before: string[]
+    after: string[]
+  }
+  page_info?: {
+    page_number: number
+    page_image_url?: string
+    thumbnail_url?: string
+    width?: number
+    height?: number
+  }
+  related_images: Array<{
+    url: string
+    thumbnail_url?: string
+    ocr_text?: string
+    position?: any
+  }>
+  document?: {
+    id: string
+    filename: string
+    download_url: string
+  }
+  metadata: Record<string, unknown>
+}
+
 export const knowledgeApi = {
   // 获取知识库列表
   getCollections(): Promise<ApiResponse<KnowledgeBase[]>> {
@@ -56,6 +85,17 @@ export const knowledgeApi = {
     search_mode?: string
   }): Promise<ApiResponse<SearchResult[]>> {
     return request.post('/knowledge/search', data)
+  },
+
+  // 增强检索（返回页面预览、图片等）
+  enhancedSearch(data: {
+    collection_id: string
+    query: string
+    top_k?: number
+    similarity_threshold?: number
+    search_mode?: string
+  }): Promise<ApiResponse<EnhancedSearchResult[]>> {
+    return request.post('/knowledge/search/enhanced', data)
   },
 
   // 获取检索配置

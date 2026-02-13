@@ -4,6 +4,7 @@ from app.models.chat import ChatSession, ChatMessage
 from app.models.knowledge import KnowledgeBase, Document
 from app.models.memory import LongTermMemory
 from app.models.model_config import ModelConfig
+from app.models.document_rich import DocumentPage, DocumentElement, DocumentChunk, OCRTask
 
 __all__ = [
     "User",
@@ -12,5 +13,9 @@ __all__ = [
     "KnowledgeBase",
     "Document",
     "LongTermMemory",
-    "ModelConfig"
+    "ModelConfig",
+    "DocumentPage",
+    "DocumentElement",
+    "DocumentChunk",
+    "OCRTask"
 ]

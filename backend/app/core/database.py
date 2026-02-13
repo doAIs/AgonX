@@ -62,7 +62,17 @@ async def get_async_session() -> AsyncSession:
 
 
 async def init_db():
-    """初始化数据库"""
+    """初始化数据库
+    
+    确保所有模型被加载后再创建表
+    """
+    # 导入所有模型确保它们被注册到Base.metadata
+    from app.models import (
+        User, ChatSession, ChatMessage,
+        KnowledgeBase, Document, LongTermMemory, ModelConfig,
+        DocumentPage, DocumentElement, DocumentChunk, OCRTask
+    )
+    
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
